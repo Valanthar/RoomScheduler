@@ -1,0 +1,33 @@
+## .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+.vscode/
+*.db
+*.db-shm
+*.db-wal
+
+## Test results
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+
+## Rider
+.idea/
+
+## Env / secrets — NEVER commit these
+appsettings.Production.json
+*.env
+.env.*
+
+## NuGet
+*.nupkg
+packages/
+# packages.lock.json is intentionally NOT ignored — it must be committed
+# so that `dotnet restore --locked-mode` in Docker produces a reproducible build.
+
+## Docker
+# .dockerignore is committed to source control — do not ignore it.

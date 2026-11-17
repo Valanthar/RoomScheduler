@@ -1,0 +1,29 @@
+# Exclude build artefacts — the Docker build recompiles from source.
+**/bin/
+**/obj/
+
+# SQLite databases — never bake data into an image.
+*.db
+*.db-shm
+*.db-wal
+
+# Git history — not needed inside the build container.
+.git/
+.gitignore
+
+# IDE metadata
+.vs/
+.vscode/
+.idea/
+
+# Local secrets and env files
+*.env
+.env.*
+appsettings.Production.json
+
+# Docs and markdown — not needed for the build.
+docs/
+*.md
+
+# Test results
+**/TestResults/

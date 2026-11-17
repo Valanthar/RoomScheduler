@@ -1,0 +1,246 @@
+# =============================================================================
+# RoomScheduler API — Sample HTTP Requests
+# =============================================================================
+# Compatible with: VS Code REST Client extension, JetBrains HTTP Client,
+#                  Visual Studio 2022+ built-in HTTP editor.
+#
+# HOW TO USE
+# ----------
+# 1. Start the API:
+#      cd src/RoomScheduler.Api
+#      dotnet run
+#
+# 2. Run requests in ORDER (each step depends on the previous one).
+#
+# 3. After step 1 (Login), copy the token from the response and paste it
+#    into the @token variable below — then every protected request works.
+#
+# Base URL — matches launchSettings.json http profile.
+# =============================================================================
+
+@baseUrl    = http://localhost:5175
+@adminEmail = admin@roomscheduler.com
+@adminPass  = Admin@123456
+
+# ── Paste your JWT here after running the Login request ──────────────────────
+@token      = PASTE_TOKEN_HERE
+
+# ── Paste IDs returned by previous requests ──────────────────────────────────
+@professorId = PASTE_PROFESSOR_ID_HERE
+@salaId      = PASTE_SALA_ID_HERE
+@reservaId   = PASTE_RESERVA_ID_HERE
+
+
+# =============================================================================
+# STEP 0 — Health check (no auth required)
+# =============================================================================
+
+GET {{baseUrl}}/
+Accept: application/json
+
+
+###
+# =============================================================================
+# STEP 1 — Login as Admin
+# Returns a JWT. Copy the "token" value into @token above.
+#
+# Business Rule 3: Valid credentials → 200 + JWT
+# Business Rule 3: Invalid credentials → 422 (vague message, no user enumeration)
+# =============================================================================
+
+POST {{baseUrl}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{adminEmail}}",
+  "password": "{{adminPass}}"
+}
+
+
+###
+# ── Wrong password — expect 422 ───────────────────────────────────────────────
+
+POST {{baseUrl}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{adminEmail}}",
+  "password": "wrong-password"
+}
+
+
+###
+# =============================================================================
+# STEP 2 — Register a new Professor  [Admin role required]
+# Copy the returned "id" into @professorId above.
+#
+# Business Rule 1: Only Admin can create accounts → 201
+# Business Rule 4: Professor token here → 403
+# Business Rule 2: Password is never stored in plaintext
+# =============================================================================
+
+POST {{baseUrl}}/api/v1/professores
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Maria Silva",
+  "email": "maria.silva@escola.com",
+  "password": "Prof@123456",
+  "role": 0
+}
+
+
+###
+# ── Duplicate email — expect 409 ─────────────────────────────────────────────
+
+POST {{baseUrl}}/api/v1/professores
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Maria Silva",
+  "email": "maria.silva@escola.com",
+  "password": "Prof@123456",
+  "role": 0
+}
+
+
+###
+# ── Weak password — expect 400 (FluentValidation) ────────────────────────────
+
+POST {{baseUrl}}/api/v1/professores
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Joao Santos",
+  "email": "joao@escola.com",
+  "password": "weak",
+  "role": 0
+}
+
+
+###
+# =============================================================================
+# STEP 3 — Get Room Grid for a date  [Any authenticated user]
+# Replace the date with today's date or any future date (YYYY-MM-DD).
+#
+# Returns all active rooms with their reservations for that day.
+# =============================================================================
+
+GET {{baseUrl}}/api/v1/salas/grid?data=2026-11-18
+Accept: application/json
+Authorization: Bearer {{token}}
+
+
+###
+# ── Missing token — expect 401 ───────────────────────────────────────────────
+
+GET {{baseUrl}}/api/v1/salas/grid?data=2026-11-18
+Accept: application/json
+
+
+###
+# =============================================================================
+# STEP 4 — Create a Reservation  [Professor role required]
+# Replace @salaId with a real Sala ID from your database.
+# Copy the returned "id" into @reservaId above.
+#
+# StartsAt / EndsAt must be in the FUTURE (Business Rule 6).
+# Business Rule 5: Overlapping times on the same room → 409
+# =============================================================================
+
+POST {{baseUrl}}/api/v1/reservas
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "salaId":   "{{salaId}}",
+  "subject":  "Aula de Matemática",
+  "startsAt": "2026-11-25T09:00:00Z",
+  "endsAt":   "2026-11-25T10:00:00Z"
+}
+
+
+###
+# ── Overlap — same room, overlapping window — expect 409 ─────────────────────
+
+POST {{baseUrl}}/api/v1/reservas
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "salaId":   "{{salaId}}",
+  "subject":  "Conflicting Class",
+  "startsAt": "2026-11-25T09:30:00Z",
+  "endsAt":   "2026-11-25T10:30:00Z"
+}
+
+
+###
+# ── Past date — expect 422 (Business Rule 6) ──────────────────────────────────
+
+POST {{baseUrl}}/api/v1/reservas
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "salaId":   "{{salaId}}",
+  "subject":  "Late Class",
+  "startsAt": "2020-01-01T09:00:00Z",
+  "endsAt":   "2020-01-01T10:00:00Z"
+}
+
+
+###
+# =============================================================================
+# STEP 5 — Update a Reservation  [Author only]
+# Uses the @reservaId set above.
+#
+# Business Rule 7: Different professor's token → 403
+# =============================================================================
+
+PUT {{baseUrl}}/api/v1/reservas/{{reservaId}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "subject":  "Aula de Física — Atualizada",
+  "startsAt": "2026-11-25T10:00:00Z",
+  "endsAt":   "2026-11-25T11:00:00Z"
+}
+
+
+###
+# ── Non-existent reservation — expect 404 ────────────────────────────────────
+
+PUT {{baseUrl}}/api/v1/reservas/00000000-0000-0000-0000-000000000000
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "subject":  "Ghost Class",
+  "startsAt": "2026-11-25T11:00:00Z",
+  "endsAt":   "2026-11-25T12:00:00Z"
+}
+
+
+###
+# =============================================================================
+# STEP 6 — Delete a Reservation  [Author only]
+# Uses the @reservaId set above.
+#
+# Business Rule 7: Only the author can delete → 204
+# Business Rule 7: Different professor's token → 403
+# =============================================================================
+
+DELETE {{baseUrl}}/api/v1/reservas/{{reservaId}}
+Authorization: Bearer {{token}}
+
+
+###
+# ── Non-existent reservation — expect 404 ────────────────────────────────────
+
+DELETE {{baseUrl}}/api/v1/reservas/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{token}}
