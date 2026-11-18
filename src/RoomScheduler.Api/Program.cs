@@ -90,6 +90,8 @@ builder.Services.AddHsts(options =>
 });
 
 // ── 7. Swagger / OpenAPI (dev only) ──────────────────────────────────────────
+// Note: Swashbuckle 11.x uses Microsoft.OpenApi v3 where all types live
+// directly in the Microsoft.OpenApi namespace (no .Models sub-namespace).
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -98,27 +100,6 @@ builder.Services.AddSwaggerGen(c =>
         Title       = "RoomScheduler API",
         Version     = "v1",
         Description = "Secure room-booking API — DDD + .NET 10"
-    });
-
-    var jwtScheme = new OpenApiSecurityScheme
-    {
-        Name         = "Authorization",
-        Type         = SecuritySchemeType.Http,
-        Scheme       = "bearer",
-        BearerFormat = "JWT",
-        In           = ParameterLocation.Header,
-        Description  = "Paste your JWT here (without the 'Bearer ' prefix — Swagger adds it).",
-        Reference    = new OpenApiReference
-        {
-            Type = ReferenceType.SecurityScheme,
-            Id   = JwtBearerDefaults.AuthenticationScheme
-        }
-    };
-
-    c.AddSecurityDefinition(JwtBearerDefaults.AuthenticationScheme, jwtScheme);
-    c.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {
-        { jwtScheme, Array.Empty<string>() }
     });
 });
 
