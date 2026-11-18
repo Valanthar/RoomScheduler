@@ -1,5 +1,4 @@
 using FluentValidation;
-using FluentValidation.AspNetCore;
 using Microsoft.Extensions.DependencyInjection;
 using RoomScheduler.Application.Interfaces;
 using RoomScheduler.Application.Services;
@@ -16,9 +15,11 @@ public static class DependencyInjection
         services.AddScoped<IReservaService,   ReservaService>();
         services.AddScoped<ISalaService,      SalaService>();
 
-        // ── FluentValidation — scans this assembly for all AbstractValidator<T> ─
-        services.AddFluentValidationAutoValidation();
-        services.AddValidatorsFromAssemblyContaining<DependencyInjection>();
+        // ── FluentValidation — registers all AbstractValidator<T> in this assembly.
+        // AddFluentValidationAutoValidation() is intentionally NOT called here because
+        // it lives in FluentValidation.AspNetCore, which is an Api-layer dependency.
+        // It is registered in Program.cs instead.
+        services.AddValidatorsFromAssemblyContaining<AuthService>();
 
         return services;
     }

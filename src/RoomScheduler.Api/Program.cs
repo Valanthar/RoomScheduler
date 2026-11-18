@@ -1,4 +1,5 @@
 using System.Text;
+using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -13,6 +14,10 @@ var builder = WebApplication.CreateBuilder(args);
 // ── 1. Application & Infrastructure services ─────────────────────────────────
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+
+// Wire up FluentValidation's ASP.NET Core auto-validation here (Api layer)
+// because FluentValidation.AspNetCore is an Api dependency, not Application.
+builder.Services.AddFluentValidationAutoValidation();
 
 // ── 2. Controllers ────────────────────────────────────────────────────────────
 builder.Services.AddControllers();
